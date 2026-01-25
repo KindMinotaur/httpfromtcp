@@ -8,25 +8,34 @@ import (
 	"github.com/KindMinotaur/httpfromtcp/internal/request"
 )
 
-func main() {
-	listener, err := net.Listen("tcp", ":42069")
-	if err != nil {
-		log.Fatal("error", "error", err)
-	}
+const port = ":42069"
 
+func main() {
+	listener, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("error listening for TCP traffic: %s\n", err.Error())
+	}
+	defer listener.Close()
+
+	fmt.Println("Listening for TCP traffic on", port)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatal("error", "error", err)
+			log.Fatalf("error: %s\n", err.Error())
 		}
-		r, err := request.RequestFromReader(conn)
-		if err != nil {
-			log.Fatal("error", "error", err)
-		}
+		fmt.Println("Accepted connection from", conn.RemoteAddr())
 
-		fmt.Printf("Request line:\n")
-		fmt.Printf("- Method: %s\n", r.RequestLine.Method)
-		fmt.Printf("- Target: %s\n", r.RequestLine.RequestTarget)
-		fmt.Printf("- Version: %s\n", r.RequestLine.HttpVersion)
+		req, err := request.RequestFromReader(conn)
+		if err != nil {
+			log.Fatalf("error parsing request: %s\n", err.Error())
+		}
+		fmt.Println("Request line:")
+		fmt.Printf("- Method: %s\n", req.RequestLine.Method)
+		fmt.Printf("- Target: %s\n", req.RequestLine.RequestTarget)
+		fmt.Printf("- Version: %s\n", req.RequestLine.HttpVersion)
+		fmt.Println("Headers:")
+		for key, value := range req.Headers {
+			fmt.Printf("- %s: %s\n", key, value)
+		}
 	}
 }
